@@ -2,7 +2,7 @@
 
 #### 介绍
 
-layaA星寻路Demo,Laya引擎版本 2.6.1，理论上兼容所有版本的Laya
+layaA星寻路Demo,Laya引擎版本 2.6.1，理论上兼容所有版本的Laya，也适用于2D项目，但是需要将所有Vector3改成Point
 
 #### 使用说明
 
