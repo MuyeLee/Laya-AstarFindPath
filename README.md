@@ -1,37 +1,29 @@
 # Laya A星寻路
 
 #### 介绍
-layaA星寻路Demo
 
-#### 软件架构
-软件架构说明
-
-
-#### 安装教程
-
-1.  xxxx
-2.  xxxx
-3.  xxxx
+layaA星寻路Demo,Laya引擎版本 2.6.1，理论上兼容所有版本的Laya
 
 #### 使用说明
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+1.	将AStar文件夹直接拖入Laya工程中
+2.  通过Unity导出配置文件
+3.	将配置文件放入/bin/res/nav/文件夹下
+4.	Laya中调用初始化方法并读取配置文件
+5.	寻路脚本的调用
 
-#### 参与贡献
+#### API说明
 
-1.  Fork 本仓库
-2.  新建 Feat_xxx 分支
-3.  提交代码
-4.  新建 Pull Request
+1.	AStarPath.ts A星寻路的管理类
+1.1	init(path: string, successed: Laya.Handler, failed: Laya.Handler)
+	初始化方法 	path:配置文件路径	successed:初始化成功的回调	failed:初始化失败的回调
+1.2	FindPath(start_pos: Laya.Vector3, target_pos: Laya.Vector3, is_offset: boolean = false)
+	获取寻路路径节点	start_pos:起始点坐标	target_pos:目标点坐标	is_offset:是否对各个节点的坐标做轻微的随机偏移
+1.3	MoveToTarget(node: Laya.Sprite3D, start_pos: Laya.Vector3, target_pos: Laya.Vector3, speed: number, finish: Laya.Handler, is_lookat: boolean = false, is_offset: boolean = false)
+	移动到目标点	node:要移动的物体	start_pos:起始点坐标	target_pos:目标点坐标	speed:移动速度 is_lookat:是否旋转并朝向下一个节点	is_offset:是否对各个节点的坐标做轻微的随机偏移
 
+2.	AStarNode.ts A星寻路的节点类
 
-#### 码云特技
+3.	PathData	A星寻路的配置参数
 
-1.  使用 Readme\_XXX.md 来支持不同的语言，例如 Readme\_en.md, Readme\_zh.md
-2.  码云官方博客 [blog.gitee.com](https://blog.gitee.com)
-3.  你可以 [https://gitee.com/explore](https://gitee.com/explore) 这个地址来了解码云上的优秀开源项目
-4.  [GVP](https://gitee.com/gvp) 全称是码云最有价值开源项目，是码云综合评定出的优秀开源项目
-5.  码云官方提供的使用手册 [https://gitee.com/help](https://gitee.com/help)
-6.  码云封面人物是一档用来展示码云会员风采的栏目 [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)
+4.	PointIndex	A星寻路的节点计算类

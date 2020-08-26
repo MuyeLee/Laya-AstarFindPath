@@ -1,0 +1,25 @@
+{
+    "x":0,
+    "type":"Scene",
+    "selectedBox":2,
+    "searchKey":"Scene",
+    "props":{"width":960,"sceneColor":"#000000","runtime":"Test/GameManager.ts","height":540},
+    "nodeParent":-1,
+    "maxID":3,
+    "label":"Scene",
+    "isDirectory":false,
+    "isAniNode":true,
+    "hasChild":false,
+    "compId":2,
+    "child":[
+        ],
+    "animations":[
+        {
+            "nodes":[
+                ],
+            "name":"ani1",
+            "id":1,
+            "frameRate":24,
+            "action":0
+        }]
+}
