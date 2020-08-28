@@ -40,8 +40,12 @@ export default class AStarPath {
             this.pd.row = res.row;
             this.pd.col_interval = res.col_interval;
             this.pd.row_interval = res.row_interval;
+            this.pd.width = Number.parseFloat(res.width);
+            this.pd.heigt = Number.parseFloat(res.height);
             this.pd.col_start = Number.parseFloat(res.col_start);
             this.pd.row_start = Number.parseFloat(res.row_start);
+            this.pd.half_heigt = this.pd.heigt * 0.5;
+            this.pd.half_width = this.pd.width * 0.5;
             this.pd.points = new Array<Array<number>>();
             for (let i = 0; i < this.pd.col; i++) {
                 let temp: Array<number> = new Array<number>();
@@ -77,26 +81,13 @@ export default class AStarPath {
         let start_point = new Laya.Point();
         let target_point = new Laya.Point();
 
-        if (target_pi.row_left == start_pi.row_left && target_pi.col_top == start_pi.col_top) {
+        if (target_pi.x == start_pi.x && target_pi.y == start_pi.y) {
             path.push(target_pos);
         } else {
-            if (target_pi.row_left > start_pi.row_left) {
-                start_point.x = start_pi.row_right;
-                target_point.x = target_pi.row_right;
-            }
-            else {
-                start_point.x = start_pi.row_left;
-                target_point.x = target_pi.row_left;
-            }
-
-            if (target_pi.col_top > start_pi.col_top) {
-                start_point.y = start_pi.col_top;
-                target_point.y = target_pi.col_top;
-            }
-            else {
-                start_point.y = start_pi.col_down;
-                target_point.y = target_pi.col_down;
-            }
+            start_point.x = start_pi.x;
+            start_point.y = start_pi.y;
+            target_point.x = target_pi.x;
+            target_point.y = target_pi.y;
             let arr: Array<Laya.Point> = new Array<Laya.Point>();
             let target = this.ClacPath(start_point, target_point, open_list, close_list);
             if (target) {
@@ -108,8 +99,8 @@ export default class AStarPath {
                 let offset_x = 0;
                 let offset_y = 0;
                 let last_point: Laya.Point = null
-                for (let i = arr.length - 1; i > 0; i--) {
-                    let V = new Laya.Vector3(this.pd.row_start + arr[i].x * this.pd.row_interval + (is_offset ? this.Random(-10, 10) * 0.01 : 0), 0, this.pd.col_start - this.pd.col_interval * arr[i].y + (is_offset ? this.Random(-10, 10) * 0.02 : 0));
+                for (let i = arr.length - 2; i > 0; i--) {
+                    let V = new Laya.Vector3(this.pd.row_start + arr[i].x * this.pd.width + (is_offset ? this.Random(-10, 10) * 0.01 : 0), 0, this.pd.col_start - this.pd.heigt * arr[i].y + (is_offset ? this.Random(-10, 10) * 0.02 : 0));
                     if (last_point != null) {
                         if (offset_x > -2 && offset_x < 2
                             && offset_y > -2 && offset_y < 2
@@ -221,42 +212,91 @@ export default class AStarPath {
 
     /**
      * 移动到目标点
-     * @param node 要移动的物体
+     * @param move_node 要移动的物体
+     * @param rotate_node 要旋转的物体
      * @param start_pos 起始点
      * @param target_pos 目标点
      * @param speed 移动速度
      * @param finish 抵达目标点回调
      */
-    public MoveToTarget(node: Laya.Sprite3D, start_pos: Laya.Vector3, target_pos: Laya.Vector3, speed: number, finish: Laya.Handler, is_lookat: boolean = false, is_offset: boolean = false) {
+    public MoveToTarget(move_node: Laya.Sprite3D, rotate_node: Laya.Sprite3D, start_pos: Laya.Vector3, target_pos: Laya.Vector3, speed: number, finish: Laya.Handler, is_offset: boolean = false) {
         let path: Array<Laya.Vector3> = this.FindPath(start_pos, target_pos, is_offset);
         if (path == null) return;
-        this.StopMove(node);
-        this.Move(node, path, speed, finish, is_lookat, is_offset);
+        this.StopMove(move_node);
+        this.Move(move_node, rotate_node, path, speed, finish);
     }
 
     /**
     * 移动到目标点
-    * @param node 要移动的物体
+    * @param move_node 要移动的物体
+    * @param rotate_node 要旋转的物体
     * @param path 路径节点列表
     * @param speed 移动速度
     * @param finish 抵达目标点回调
     */
-    private Move(node: Laya.Sprite3D, path: Array<Laya.Vector3>, speed: number, finish: Laya.Handler, is_lookat: boolean, is_offset: boolean) {
+    private Move(move_node: Laya.Sprite3D, rotate_node: Laya.Sprite3D, path: Array<Laya.Vector3>, speed: number, finish: Laya.Handler) {
         if (path.length > 0) {
             //获取到下个路径节点
             let next: Laya.Vector3 = path.splice(0, 1)[0];
+
+            let timer = this.GetMoveTime(move_node.transform.position, next, speed);
+
             //朝向目标坐标点
-            if (is_lookat) node.transform.lookAt(next, this.VectorUp, false);
+            if (rotate_node) {
+                let temp = rotate_node.transform.rotationEuler.y;
+                rotate_node.transform.lookAt(next, this.VectorUp, false);
+                let next_rotate_y = rotate_node.transform.rotationEuler.y;
+                rotate_node.transform.rotationEuler.y = temp;
+                Laya.Tween.to(rotate_node.transform.rotationEuler, {
+                    y: next_rotate_y
+                }, 50);
+            }
+
             //移动动画
-            Laya.Tween.to(node.transform, {
+            Laya.Tween.to(move_node.transform, {
                 localPositionX: next.x,
                 localPositionZ: next.z
-            }, this.GetMoveTime(node.transform.position, next, speed),
+            }, timer,
                 Laya.Ease.linearNone, new Laya.Handler(this, function () {
-                    if (path.length > 0) this.Move(node, path, speed, finish);
+                    if (path.length > 0) this.Move(move_node, rotate_node, path, speed, finish);
                     else if (finish) finish.run();
                 }), 0, true);
         }
+    }
+
+    /**
+     * 移动到地图上某一个坐标点
+     * @param move_node 要移动的物体
+     * @param rotate_node 要旋转的物体
+     * @param point 坐标点
+     * @param speed 移动速度
+     * @param finish 移动完成回调
+     */
+    public MoveToPoint(move_node: Laya.Sprite3D, rotate_node: Laya.Sprite3D, point: Laya.Vector3, speed: number, finish: Laya.Handler) {
+        //获取到下个路径节点
+        let next: Laya.Vector3 = point;
+
+        let timer = this.GetMoveTime(move_node.transform.position, next, speed);
+
+        //朝向目标坐标点
+        if (rotate_node) {
+            let temp = rotate_node.transform.rotationEuler.y;
+            rotate_node.transform.lookAt(next, this.VectorUp, false);
+            let next_rotate_y = rotate_node.transform.rotationEuler.y;
+            rotate_node.transform.rotationEuler.y = temp;
+            Laya.Tween.to(rotate_node.transform.rotationEuler, {
+                y: next_rotate_y
+            }, 50);
+        }
+
+        //移动动画
+        Laya.Tween.to(move_node.transform, {
+            localPositionX: next.x,
+            localPositionZ: next.z
+        }, timer,
+            Laya.Ease.linearNone, new Laya.Handler(this, function () {
+                if (finish) finish.run();
+            }), 0, true);
     }
 
     /**

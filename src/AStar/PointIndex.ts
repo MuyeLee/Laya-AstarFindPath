@@ -7,23 +7,15 @@ export default class PointIndex {
     public point: Laya.Vector3;
 
     /**
-     * 坐标点左侧列索引
+     * X轴索引
      */
-    public row_left: number;
-    /**
-     * 坐标点右侧列索引
-     */
-    public row_right: number;
+    public x: number;
 
     /**
-     * 坐标点上侧行索引
+     * Y轴索引
      */
-    public col_top: number;
+    public y: number;
 
-    /**
-     * 坐标点下侧行索引
-     */
-    public col_down: number;
 
 
     /**
@@ -39,18 +31,16 @@ export default class PointIndex {
      */
     constructor(point: Laya.Vector3, col_interval: number, row_interval: number, col_start: number, row_start: number) {
         this.point = point;
-        let m: number = Math.abs(row_start - point.x) / row_interval;
-        let n: number = Math.abs(col_start - point.z) / col_interval;
+        let u: number = Math.abs(row_start - point.x);
+        let v: number = Math.abs(col_start - point.z);
+        let m: number = u / AStarPath.GetInstance().pd.width;
+        let n: number = v / AStarPath.GetInstance().pd.heigt;
+        this.x = Math.floor(m);
+        this.y = Math.floor(n);
 
-        this.row_left =  Math.floor(m);
-        this.row_right = Math.ceil(m);
+        if (AStarPath.GetInstance().pd.row_start + this.x * AStarPath.GetInstance().pd.width + 0.5 >= this.point.x
+            && AStarPath.GetInstance().pd.row_start + this.x * AStarPath.GetInstance().pd.width - 0.5 < this.point.x) this.x++;
 
-        this.col_top = Math.floor(n);
-        this.col_down = Math.ceil(n);
-
-        this.is_error_path = AStarPath.GetInstance().pd.points[this.col_top][this.row_left] == 0
-            && AStarPath.GetInstance().pd.points[this.col_top][this.row_right] == 0
-            && AStarPath.GetInstance().pd.points[this.col_down][this.row_left] == 0
-            && AStarPath.GetInstance().pd.points[this.col_down][this.row_right] == 0;
+        this.is_error_path = AStarPath.GetInstance().pd.points[this.y][this.x] == 0
     }
 }

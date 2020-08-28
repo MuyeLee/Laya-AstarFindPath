@@ -5,5 +5,9 @@ export default class PathData {
     public row_interval: number;//列间距
     public col_start: number;//行起点位置
     public row_start: number;//列起点位置
+    public width: number;//寻路节点宽度
+    public heigt: number;//寻路节点高度
+    public half_width: number;//寻路节点宽度
+    public half_heigt: number;//寻路节点高度
     public points: Array<Array<number>>;
 }
