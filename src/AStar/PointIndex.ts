@@ -31,16 +31,13 @@ export default class PointIndex {
      */
     constructor(point: Laya.Vector3, col_interval: number, row_interval: number, col_start: number, row_start: number) {
         this.point = point;
-        let u: number = Math.abs(row_start - point.x);
-        let v: number = Math.abs(col_start - point.z);
+        let u: number = Math.abs(row_start - point.x + AStarPath.GetInstance().pd.half_width);
+        let v: number = Math.abs(col_start - point.z - AStarPath.GetInstance().pd.half_heigt);
         let m: number = u / AStarPath.GetInstance().pd.width;
         let n: number = v / AStarPath.GetInstance().pd.heigt;
         this.x = Math.floor(m);
         this.y = Math.floor(n);
-
-        if (AStarPath.GetInstance().pd.row_start + this.x * AStarPath.GetInstance().pd.width + 0.5 >= this.point.x
-            && AStarPath.GetInstance().pd.row_start + this.x * AStarPath.GetInstance().pd.width - 0.5 < this.point.x) this.x++;
-
+        
         this.is_error_path = AStarPath.GetInstance().pd.points[this.y][this.x] == 0
     }
 }

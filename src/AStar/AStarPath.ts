@@ -100,7 +100,7 @@ export default class AStarPath {
                 let offset_y = 0;
                 let last_point: Laya.Point = null
                 for (let i = arr.length - 2; i > 0; i--) {
-                    let V = new Laya.Vector3(this.pd.row_start + arr[i].x * this.pd.width + (is_offset ? this.Random(-10, 10) * 0.01 : 0), 0, this.pd.col_start - this.pd.heigt * arr[i].y + (is_offset ? this.Random(-10, 10) * 0.02 : 0));
+                    let V = new Laya.Vector3(this.pd.row_start + arr[i].x * this.pd.width - this.pd.half_width + (is_offset ? this.Random(-10, 10) * 0.01 : 0), 0, this.pd.col_start - this.pd.heigt * arr[i].y - this.pd.half_heigt + (is_offset ? this.Random(-10, 10) * 0.02 : 0));
                     if (last_point != null) {
                         if (offset_x > -2 && offset_x < 2
                             && offset_y > -2 && offset_y < 2

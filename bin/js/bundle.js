@@ -39,15 +39,12 @@
     class PointIndex {
         constructor(point, col_interval, row_interval, col_start, row_start) {
             this.point = point;
-            let u = Math.abs(row_start - point.x);
-            let v = Math.abs(col_start - point.z);
+            let u = Math.abs(row_start - point.x + AStarPath.GetInstance().pd.half_width);
+            let v = Math.abs(col_start - point.z - AStarPath.GetInstance().pd.half_heigt);
             let m = u / AStarPath.GetInstance().pd.width;
             let n = v / AStarPath.GetInstance().pd.heigt;
             this.x = Math.floor(m);
             this.y = Math.floor(n);
-            if (AStarPath.GetInstance().pd.row_start + this.x * AStarPath.GetInstance().pd.width + 0.5 >= this.point.x
-                && AStarPath.GetInstance().pd.row_start + this.x * AStarPath.GetInstance().pd.width - 0.5 < this.point.x)
-                this.x++;
             this.is_error_path = AStarPath.GetInstance().pd.points[this.y][this.x] == 0;
         }
     }
@@ -123,7 +120,7 @@
                     let offset_y = 0;
                     let last_point = null;
                     for (let i = arr.length - 2; i > 0; i--) {
-                        let V = new Laya.Vector3(this.pd.row_start + arr[i].x * this.pd.width + (is_offset ? this.Random(-10, 10) * 0.01 : 0), 0, this.pd.col_start - this.pd.heigt * arr[i].y + (is_offset ? this.Random(-10, 10) * 0.02 : 0));
+                        let V = new Laya.Vector3(this.pd.row_start + arr[i].x * this.pd.width - this.pd.half_width + (is_offset ? this.Random(-10, 10) * 0.01 : 0), 0, this.pd.col_start - this.pd.heigt * arr[i].y - this.pd.half_heigt + (is_offset ? this.Random(-10, 10) * 0.02 : 0));
                         if (last_point != null) {
                             if (offset_x > -2 && offset_x < 2
                                 && offset_y > -2 && offset_y < 2
