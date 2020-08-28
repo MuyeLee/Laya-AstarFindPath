@@ -29,15 +29,17 @@ export default class PointIndex {
      * @param col_interval 行间距
      * @param row_interval 列间距
      */
-    constructor(point: Laya.Vector3, col_interval: number, row_interval: number, col_start: number, row_start: number) {
+    constructor(point: Laya.Vector3, col_start: number, row_start: number) {
         this.point = point;
-        let u: number = Math.abs(row_start - point.x + AStarPath.GetInstance().pd.half_width);
-        let v: number = Math.abs(col_start - point.z - AStarPath.GetInstance().pd.half_heigt);
-        let m: number = u / AStarPath.GetInstance().pd.width;
-        let n: number = v / AStarPath.GetInstance().pd.heigt;
-        this.x = Math.floor(m);
-        this.y = Math.floor(n);
-        
-        this.is_error_path = AStarPath.GetInstance().pd.points[this.y][this.x] == 0
+        let u: number = Number.parseInt((row_start - Math.round(point.x)).toFixed(0));
+        let v: number = Number.parseInt((col_start - Math.round(point.z)).toFixed(0));
+
+        this.x = u / AStarPath.GetInstance().pd.width;
+        this.y = v / AStarPath.GetInstance().pd.heigt;
+
+        this.is_error_path = this.y < AStarPath.GetInstance().pd.points.length
+            && this.x < AStarPath.GetInstance().pd.points[0].length
+            && this.x > -1 && this.y > -1
+            && AStarPath.GetInstance().pd.points[this.y][this.x] == 0
     }
 }

@@ -51,7 +51,6 @@ export default class GameManager extends Laya.Scene {
         //如果碰撞到物体
         if (this.out_hit.succeeded) {
             if (this.out_hit.collider.owner.name == "ground_01") {
-                console.log(this.out_hit.point)
                 AStarPath.GetInstance().MoveToTarget(this.player, this.player, this.player.transform.position, this.out_hit.point, 2, Laya.Handler.create(this, this.MoveFinish));
             }
         }

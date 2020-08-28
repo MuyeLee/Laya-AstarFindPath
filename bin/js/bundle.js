@@ -37,15 +37,16 @@
     }
 
     class PointIndex {
-        constructor(point, col_interval, row_interval, col_start, row_start) {
+        constructor(point, col_start, row_start) {
             this.point = point;
-            let u = Math.abs(row_start - point.x + AStarPath.GetInstance().pd.half_width);
-            let v = Math.abs(col_start - point.z - AStarPath.GetInstance().pd.half_heigt);
-            let m = u / AStarPath.GetInstance().pd.width;
-            let n = v / AStarPath.GetInstance().pd.heigt;
-            this.x = Math.floor(m);
-            this.y = Math.floor(n);
-            this.is_error_path = AStarPath.GetInstance().pd.points[this.y][this.x] == 0;
+            let u = Number.parseInt((row_start - Math.round(point.x)).toFixed(0));
+            let v = Number.parseInt((col_start - Math.round(point.z)).toFixed(0));
+            this.x = u / AStarPath.GetInstance().pd.width;
+            this.y = v / AStarPath.GetInstance().pd.heigt;
+            this.is_error_path = this.y < AStarPath.GetInstance().pd.points.length
+                && this.x < AStarPath.GetInstance().pd.points[0].length
+                && this.x > -1 && this.y > -1
+                && AStarPath.GetInstance().pd.points[this.y][this.x] == 0;
         }
     }
 
@@ -75,8 +76,8 @@
                 this.pd.points = new Array();
                 for (let i = 0; i < this.pd.col; i++) {
                     let temp = new Array();
-                    for (let j = 1; j <= this.pd.row; j++) {
-                        temp.push(res.points[(i + 1) * this.pd.row - j]);
+                    for (let j = 0; j < this.pd.row; j++) {
+                        temp.push(res.points[i * this.pd.row + j]);
                     }
                     this.pd.points.push(temp);
                 }
@@ -93,8 +94,8 @@
             let path = new Array();
             let open_list = new Array();
             let close_list = new Array();
-            let start_pi = new PointIndex(start_pos, this.pd.col_interval, this.pd.row_interval, this.pd.col_start, this.pd.row_start);
-            let target_pi = new PointIndex(target_pos, this.pd.col_interval, this.pd.row_interval, this.pd.col_start, this.pd.row_start);
+            let start_pi = new PointIndex(start_pos, this.pd.col_start, this.pd.row_start);
+            let target_pi = new PointIndex(target_pos, this.pd.col_start, this.pd.row_start);
             if (target_pi.is_error_path) {
                 console.error("寻路失败，终点不存在有效索引！");
                 return null;
@@ -120,7 +121,7 @@
                     let offset_y = 0;
                     let last_point = null;
                     for (let i = arr.length - 2; i > 0; i--) {
-                        let V = new Laya.Vector3(this.pd.row_start + arr[i].x * this.pd.width - this.pd.half_width + (is_offset ? this.Random(-10, 10) * 0.01 : 0), 0, this.pd.col_start - this.pd.heigt * arr[i].y - this.pd.half_heigt + (is_offset ? this.Random(-10, 10) * 0.02 : 0));
+                        let V = new Laya.Vector3(this.pd.row_start - arr[i].x * this.pd.width + (is_offset ? this.Random(-20, 20) * 0.01 : 0), 0, this.pd.col_start - this.pd.heigt * arr[i].y + (is_offset ? this.Random(-20, 20) * 0.02 : 0));
                         if (last_point != null) {
                             if (offset_x > -2 && offset_x < 2
                                 && offset_y > -2 && offset_y < 2
@@ -207,6 +208,9 @@
                             let _point = new Laya.Point(row, col);
                             open_list.push(new AStarNode(_point));
                         }
+                        else {
+                            console.log(col + "," + row);
+                        }
                     }
                 }
             }
@@ -224,13 +228,19 @@
                 let next = path.splice(0, 1)[0];
                 let timer = this.GetMoveTime(move_node.transform.position, next, speed);
                 if (rotate_node) {
-                    let temp = rotate_node.transform.rotationEuler.y;
+                    let temp = rotate_node.transform.localRotationEulerY;
                     rotate_node.transform.lookAt(next, this.VectorUp, false);
-                    let next_rotate_y = rotate_node.transform.rotationEuler.y;
-                    rotate_node.transform.rotationEuler.y = temp;
-                    Laya.Tween.to(rotate_node.transform.rotationEuler, {
+                    let next_rotate_y = rotate_node.transform.localRotationEulerY - 180;
+                    rotate_node.transform.localRotationEulerY = temp;
+                    rotate_node.clearTimer(this, this.Rotate);
+                    let v1 = new Laya.Vector3();
+                    v1.y = temp;
+                    rotate_node.frameLoop(1, this, this.Rotate, [rotate_node, v1]);
+                    Laya.Tween.to(v1, {
                         y: next_rotate_y
-                    }, 50);
+                    }, timer - (timer * 0.8), Laya.Ease.linearNone, new Laya.Handler(this, function () {
+                        rotate_node.clearTimer(this, this.Rotate);
+                    }), 0, true);
                 }
                 Laya.Tween.to(move_node.transform, {
                     localPositionX: next.x,
@@ -243,6 +253,9 @@
                 }), 0, true);
             }
         }
+        Rotate(rotate_node, vector) {
+            rotate_node.transform.localRotationEulerY = vector.y;
+        }
         MoveToPoint(move_node, rotate_node, point, speed, finish) {
             let next = point;
             let timer = this.GetMoveTime(move_node.transform.position, next, speed);
@@ -253,7 +266,7 @@
                 rotate_node.transform.rotationEuler.y = temp;
                 Laya.Tween.to(rotate_node.transform.rotationEuler, {
                     y: next_rotate_y
-                }, 50);
+                }, 500);
             }
             Laya.Tween.to(move_node.transform, {
                 localPositionX: next.x,
@@ -304,7 +317,6 @@
             this.this_scene.physicsSimulation.rayCast(this.ray, this.out_hit);
             if (this.out_hit.succeeded) {
                 if (this.out_hit.collider.owner.name == "ground_01") {
-                    console.log(this.out_hit.point);
                     AStarPath.GetInstance().MoveToTarget(this.player, this.player, this.player.transform.position, this.out_hit.point, 2, Laya.Handler.create(this, this.MoveFinish));
                 }
             }

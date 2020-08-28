@@ -49,8 +49,8 @@ export default class AStarPath {
             this.pd.points = new Array<Array<number>>();
             for (let i = 0; i < this.pd.col; i++) {
                 let temp: Array<number> = new Array<number>();
-                for (let j = 1; j <= this.pd.row; j++) {
-                    temp.push(res.points[(i + 1) * this.pd.row - j]);
+                for (let j = 0; j < this.pd.row; j++) {
+                    temp.push(res.points[i * this.pd.row + j]);
                 }
                 this.pd.points.push(temp);
             }
@@ -71,8 +71,8 @@ export default class AStarPath {
         let path: Array<Laya.Vector3> = new Array<Laya.Vector3>();
         let open_list: Array<AStarNode> = new Array<AStarNode>();
         let close_list: Array<string> = new Array<string>();
-        let start_pi: PointIndex = new PointIndex(start_pos, this.pd.col_interval, this.pd.row_interval, this.pd.col_start, this.pd.row_start);
-        let target_pi: PointIndex = new PointIndex(target_pos, this.pd.col_interval, this.pd.row_interval, this.pd.col_start, this.pd.row_start);
+        let start_pi: PointIndex = new PointIndex(start_pos, this.pd.col_start, this.pd.row_start);
+        let target_pi: PointIndex = new PointIndex(target_pos, this.pd.col_start, this.pd.row_start);
 
         if (target_pi.is_error_path) {
             console.error("寻路失败，终点不存在有效索引！");
@@ -96,11 +96,12 @@ export default class AStarPath {
                     target = target.prev;
                 }
 
+
                 let offset_x = 0;
                 let offset_y = 0;
                 let last_point: Laya.Point = null
                 for (let i = arr.length - 2; i > 0; i--) {
-                    let V = new Laya.Vector3(this.pd.row_start + arr[i].x * this.pd.width - this.pd.half_width + (is_offset ? this.Random(-10, 10) * 0.01 : 0), 0, this.pd.col_start - this.pd.heigt * arr[i].y - this.pd.half_heigt + (is_offset ? this.Random(-10, 10) * 0.02 : 0));
+                    let V = new Laya.Vector3(this.pd.row_start - arr[i].x * this.pd.width + (is_offset ? this.Random(-20, 20) * 0.01 : 0), 0, this.pd.col_start - this.pd.heigt * arr[i].y + (is_offset ? this.Random(-20, 20) * 0.02 : 0));
                     if (last_point != null) {
                         if (offset_x > -2 && offset_x < 2
                             && offset_y > -2 && offset_y < 2
@@ -203,7 +204,6 @@ export default class AStarPath {
                         let _point = new Laya.Point(row, col);
                         open_list.push(new AStarNode(_point));
                     }
-
                 }
             }
         }
@@ -243,13 +243,22 @@ export default class AStarPath {
 
             //朝向目标坐标点
             if (rotate_node) {
-                let temp = rotate_node.transform.rotationEuler.y;
+                let temp = rotate_node.transform.localRotationEulerY;
                 rotate_node.transform.lookAt(next, this.VectorUp, false);
-                let next_rotate_y = rotate_node.transform.rotationEuler.y;
-                rotate_node.transform.rotationEuler.y = temp;
-                Laya.Tween.to(rotate_node.transform.rotationEuler, {
+                let next_rotate_y = rotate_node.transform.localRotationEulerY - 180;
+                rotate_node.transform.localRotationEulerY = temp;
+
+                rotate_node.clearTimer(this, this.Rotate);
+                let v1 = new Laya.Vector3();
+                v1.y = temp;
+
+                rotate_node.frameLoop(1, this, this.Rotate, [rotate_node, v1]);
+
+                Laya.Tween.to(v1, {
                     y: next_rotate_y
-                }, 50);
+                }, timer - (timer * 0.8), Laya.Ease.linearNone, new Laya.Handler(this, function () {
+                    rotate_node.clearTimer(this, this.Rotate);
+                }), 0, true);
             }
 
             //移动动画
@@ -262,6 +271,10 @@ export default class AStarPath {
                     else if (finish) finish.run();
                 }), 0, true);
         }
+    }
+
+    private Rotate(rotate_node: Laya.Sprite3D, vector: Laya.Vector3) {
+        rotate_node.transform.localRotationEulerY = vector.y;
     }
 
     /**
@@ -286,7 +299,7 @@ export default class AStarPath {
             rotate_node.transform.rotationEuler.y = temp;
             Laya.Tween.to(rotate_node.transform.rotationEuler, {
                 y: next_rotate_y
-            }, 50);
+            }, 500);
         }
 
         //移动动画
