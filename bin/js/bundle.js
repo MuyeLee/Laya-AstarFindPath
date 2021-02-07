@@ -39,10 +39,10 @@
     class PointIndex {
         constructor(point, col_start, row_start) {
             this.point = point;
-            let u = Number.parseInt((row_start - Math.round(point.x)).toFixed(0));
-            let v = Number.parseInt((col_start - Math.round(point.z)).toFixed(0));
-            this.x = u / AStarPath.GetInstance().pd.width;
-            this.y = v / AStarPath.GetInstance().pd.heigt;
+            let u = Math.abs(row_start - Math.round(point.x));
+            let v = Math.abs(col_start - Math.round(point.z));
+            this.x = Math.floor(u / AStarPath.GetInstance().pd.width);
+            this.y = Math.floor(v / AStarPath.GetInstance().pd.heigt);
             this.is_error_path = this.y < AStarPath.GetInstance().pd.points.length
                 && this.x < AStarPath.GetInstance().pd.points[0].length
                 && this.x > -1 && this.y > -1
@@ -121,7 +121,7 @@
                     let offset_y = 0;
                     let last_point = null;
                     for (let i = arr.length - 2; i > 0; i--) {
-                        let V = new Laya.Vector3(this.pd.row_start - arr[i].x * this.pd.width + (is_offset ? this.Random(-20, 20) * 0.01 : 0), 0, this.pd.col_start - this.pd.heigt * arr[i].y + (is_offset ? this.Random(-20, 20) * 0.02 : 0));
+                        let V = new Laya.Vector3(this.pd.row_start + arr[i].x * this.pd.width + (is_offset ? this.Random(-this.pd.half_width * 50, this.pd.half_width * 50) * 0.01 : 0), 0, this.pd.col_start - this.pd.heigt * arr[i].y + (is_offset ? this.Random(-20, 20) * 0.02 : 0));
                         if (last_point != null) {
                             if (offset_x > -2 && offset_x < 2
                                 && offset_y > -2 && offset_y < 2
@@ -151,9 +151,7 @@
         ClacPath(start_point, target_point, open_list, close_list) {
             open_list.push(new AStarNode(start_point));
             let target_node = new AStarNode(target_point);
-            let count = 100000;
-            while (open_list.length != 0 && count > 0) {
-                count--;
+            while (open_list.length != 0) {
                 let current_point = open_list[0];
                 let temp_index = -1;
                 let index = 0;
@@ -207,9 +205,6 @@
                             && close_list.indexOf(row + "_" + col) == -1) {
                             let _point = new Laya.Point(row, col);
                             open_list.push(new AStarNode(_point));
-                        }
-                        else {
-                            console.log(col + "," + row);
                         }
                     }
                 }

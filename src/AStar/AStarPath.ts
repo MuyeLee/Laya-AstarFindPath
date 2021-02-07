@@ -38,14 +38,16 @@ export default class AStarPath {
             this.pd = new PathData();
             this.pd.col = res.col;
             this.pd.row = res.row;
-            this.pd.col_interval = res.col_interval;
-            this.pd.row_interval = res.row_interval;
             this.pd.width = Number.parseFloat(res.width);
             this.pd.heigt = Number.parseFloat(res.height);
             this.pd.col_start = Number.parseFloat(res.col_start);
             this.pd.row_start = Number.parseFloat(res.row_start);
+            this.pd.offset_x = Number.parseFloat(res.offset_x);
+            this.pd.offset_z = Number.parseFloat(res.offset_z);
             this.pd.half_heigt = this.pd.heigt * 0.5;
             this.pd.half_width = this.pd.width * 0.5;
+            this.pd.heigt_s = 1 / this.pd.heigt;
+            this.pd.width_s = 1 / this.pd.width;
             this.pd.points = new Array<Array<number>>();
             for (let i = 0; i < this.pd.col; i++) {
                 let temp: Array<number> = new Array<number>();
@@ -71,11 +73,11 @@ export default class AStarPath {
         let path: Array<Laya.Vector3> = new Array<Laya.Vector3>();
         let open_list: Array<AStarNode> = new Array<AStarNode>();
         let close_list: Array<string> = new Array<string>();
-        let start_pi: PointIndex = new PointIndex(start_pos, this.pd.col_start, this.pd.row_start);
-        let target_pi: PointIndex = new PointIndex(target_pos, this.pd.col_start, this.pd.row_start);
+        let start_pi: PointIndex = new PointIndex(start_pos, this.pd);
+        let target_pi: PointIndex = new PointIndex(target_pos, this.pd);
 
         if (target_pi.is_error_path) {
-            console.error("寻路失败，终点不存在有效索引！");
+            console.error("寻路失败，终点不存在有效索引！", target_pi);
             return null;
         }
         let start_point = new Laya.Point();
@@ -89,6 +91,7 @@ export default class AStarPath {
             target_point.x = target_pi.x;
             target_point.y = target_pi.y;
             let arr: Array<Laya.Point> = new Array<Laya.Point>();
+
             let target = this.ClacPath(start_point, target_point, open_list, close_list);
             if (target) {
                 while (target) {
@@ -96,12 +99,11 @@ export default class AStarPath {
                     target = target.prev;
                 }
 
-
                 let offset_x = 0;
                 let offset_y = 0;
                 let last_point: Laya.Point = null
                 for (let i = arr.length - 2; i > 0; i--) {
-                    let V = new Laya.Vector3(this.pd.row_start - arr[i].x * this.pd.width + (is_offset ? this.Random(-20, 20) * 0.01 : 0), 0, this.pd.col_start - this.pd.heigt * arr[i].y + (is_offset ? this.Random(-20, 20) * 0.02 : 0));
+                    let V = new Laya.Vector3(this.pd.row_start - this.pd.offset_x + arr[i].x * this.pd.width + (is_offset ? this.Random(-this.pd.half_width * 50, this.pd.half_width * 50) * 0.01 : 0), 0, this.pd.col_start - this.pd.heigt * arr[i].y - this.pd.offset_z + (is_offset ? this.Random(-20, 20) * 0.02 : 0));
                     if (last_point != null) {
                         if (offset_x > -2 && offset_x < 2
                             && offset_y > -2 && offset_y < 2
@@ -137,9 +139,7 @@ export default class AStarPath {
     private ClacPath(start_point: Laya.Point, target_point: Laya.Point, open_list: Array<AStarNode>, close_list: Array<string>) {
         open_list.push(new AStarNode(start_point));
         let target_node = new AStarNode(target_point);
-        let count = 100000;
-        while (open_list.length != 0 && count > 0) {
-            count--;
+        while (open_list.length != 0) {
             let current_point = open_list[0];
             let temp_index = -1;
             let index = 0;
@@ -163,12 +163,11 @@ export default class AStarPath {
                 } else {
                     open_list.push(node);
                     current_point.AddChild(node);
+                    if (node.node.x == target_node.node.x && node.node.y == target_node.node.y) return node;
+                    node.H = (Math.abs(target_point.x - node.node.x) + Math.abs(target_point.y - node.node.y) - 1) * 5;
                 }
                 node.G = G;
-                node.H = (Math.abs(target_point.x - node.node.x) + Math.abs(target_point.y - node.node.y) - 1) * 10;
             }
-            let target = this.OpenIsHas(target_node, open_list);
-            if (target) return target;
         }
         return null;
     }
@@ -221,9 +220,10 @@ export default class AStarPath {
      */
     public MoveToTarget(move_node: Laya.Sprite3D, rotate_node: Laya.Sprite3D, start_pos: Laya.Vector3, target_pos: Laya.Vector3, speed: number, finish: Laya.Handler, is_offset: boolean = false) {
         let path: Array<Laya.Vector3> = this.FindPath(start_pos, target_pos, is_offset);
-        if (path == null) return;
-        this.StopMove(move_node);
+        if (path == null) return false;
+        this.StopMove(move_node, rotate_node);
         this.Move(move_node, rotate_node, path, speed, finish);
+        return true;
     }
 
     /**
@@ -243,20 +243,23 @@ export default class AStarPath {
 
             //朝向目标坐标点
             if (rotate_node) {
-                let temp = rotate_node.transform.localRotationEulerY;
-                rotate_node.transform.lookAt(next, this.VectorUp, false);
-                let next_rotate_y = rotate_node.transform.localRotationEulerY - 180;
-                rotate_node.transform.localRotationEulerY = temp;
-
                 rotate_node.clearTimer(this, this.Rotate);
+                //朝向目标坐标点
+                let temp = rotate_node.transform.rotationEuler.y;
+
+                rotate_node.transform.lookAt(next, this.VectorUp, false);
+                rotate_node.transform.localRotationEulerY -= 180;
+                let next_rotate_y = rotate_node.transform.rotationEuler.y;
+                rotate_node.transform.rotationEuler.y = temp;
+
                 let v1 = new Laya.Vector3();
                 v1.y = temp;
 
-                rotate_node.frameLoop(1, this, this.Rotate, [rotate_node, v1]);
+                rotate_node.frameLoop(2, this, this.Rotate, [rotate_node, v1]);
 
                 Laya.Tween.to(v1, {
                     y: next_rotate_y
-                }, timer - (timer * 0.8), Laya.Ease.linearNone, new Laya.Handler(this, function () {
+                }, timer - (timer * 0.7), Laya.Ease.linearNone, new Laya.Handler(this, function () {
                     rotate_node.clearTimer(this, this.Rotate);
                 }), 0, true);
             }
@@ -274,50 +277,18 @@ export default class AStarPath {
     }
 
     private Rotate(rotate_node: Laya.Sprite3D, vector: Laya.Vector3) {
-        rotate_node.transform.localRotationEulerY = vector.y;
-    }
-
-    /**
-     * 移动到地图上某一个坐标点
-     * @param move_node 要移动的物体
-     * @param rotate_node 要旋转的物体
-     * @param point 坐标点
-     * @param speed 移动速度
-     * @param finish 移动完成回调
-     */
-    public MoveToPoint(move_node: Laya.Sprite3D, rotate_node: Laya.Sprite3D, point: Laya.Vector3, speed: number, finish: Laya.Handler) {
-        //获取到下个路径节点
-        let next: Laya.Vector3 = point;
-
-        let timer = this.GetMoveTime(move_node.transform.position, next, speed);
-
-        //朝向目标坐标点
-        if (rotate_node) {
-            let temp = rotate_node.transform.rotationEuler.y;
-            rotate_node.transform.lookAt(next, this.VectorUp, false);
-            let next_rotate_y = rotate_node.transform.rotationEuler.y;
-            rotate_node.transform.rotationEuler.y = temp;
-            Laya.Tween.to(rotate_node.transform.rotationEuler, {
-                y: next_rotate_y
-            }, 500);
-        }
-
-        //移动动画
-        Laya.Tween.to(move_node.transform, {
-            localPositionX: next.x,
-            localPositionZ: next.z
-        }, timer,
-            Laya.Ease.linearNone, new Laya.Handler(this, function () {
-                if (finish) finish.run();
-            }), 0, true);
+        rotate_node.transform.rotationEuler.y = vector.y;
     }
 
     /**
      * 停止移动
-     * @param node 要停止移动的物体
+     * @param move_node 要停止移动的物体
+     * @param rotate_node 要停止转动的物体
      */
-    public StopMove(node: Laya.Sprite3D) {
-        Laya.Tween.clearAll(node.transform);
+    public StopMove(move_node: Laya.Sprite3D, rotate_node: Laya.Sprite3D) {
+        Laya.Tween.clearAll(move_node.transform);
+        Laya.Tween.clearAll(rotate_node.transform.rotationEuler);
+        rotate_node.clearTimer(this, this.Rotate);
     }
 
     /**

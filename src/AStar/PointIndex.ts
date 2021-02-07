@@ -1,4 +1,4 @@
-import AStarPath from "./AStarPath";
+import PathData from "./PathData";
 
 export default class PointIndex {
     /**
@@ -26,20 +26,20 @@ export default class PointIndex {
     /**
      * 构造函数：计算坐标点附近节点索引
      * @param point 坐标点
-     * @param col_interval 行间距
-     * @param row_interval 列间距
+     * @param col_start 行起始点位置
+     * @param row_start 列起始点位置
      */
-    constructor(point: Laya.Vector3, col_start: number, row_start: number) {
+    constructor(point: Laya.Vector3, pd: PathData) {
         this.point = point;
-        let u: number = Number.parseInt((row_start - Math.round(point.x)).toFixed(0));
-        let v: number = Number.parseInt((col_start - Math.round(point.z)).toFixed(0));
+        let u: number = Math.abs(pd.row_start - Math.round(point.x) - pd.offset_x);
+        let v: number = Math.abs(pd.col_start - Math.round(point.z) - pd.offset_z);
 
-        this.x = u / AStarPath.GetInstance().pd.width;
-        this.y = v / AStarPath.GetInstance().pd.heigt;
+        this.x = Math.floor(u * pd.width_s);
+        this.y = Math.floor(v * pd.heigt_s);
 
-        this.is_error_path = this.y < AStarPath.GetInstance().pd.points.length
-            && this.x < AStarPath.GetInstance().pd.points[0].length
+        this.is_error_path = this.y < pd.points.length
+            && this.x < pd.points[0].length
             && this.x > -1 && this.y > -1
-            && AStarPath.GetInstance().pd.points[this.y][this.x] == 0
+            && pd.points[this.y][this.x] == 0
     }
 }
